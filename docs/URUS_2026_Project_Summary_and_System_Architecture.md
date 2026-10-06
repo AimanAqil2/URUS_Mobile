@@ -4,7 +4,9 @@
 **Organization:** MYSZ Technology  
 **Document purpose:** Consolidated project summary plus a proposed clean, layered, SaaS-ready implementation architecture derived from the URUS SRS and SDD.
 
-> **Source baseline:** This document is grounded in the provided Software Requirements Specification (SRS) and Software Design Document (SDD).  
+**Revision status:** Updated to the latest SRS/SDD upload. Key revisions include the aligned 12-screen blueprint, Android 11.0+ baseline, MongoDB Community Edition v6.0+, and online-only AI Insight behavior.  
+
+> **Source baseline:** This document is updated against the latest provided Software Requirements Specification (SRS) and Software Design Document (SDD), both dated 30 September 2026.  
 > **Architecture extensions:** Items marked **Proposed** are implementation decisions added to satisfy the requested goals of clean structure, multiple layers, SaaS deployment, scalability, maintainability, and reusable Flutter UI. They are not stated verbatim in the source documents.
 
 ---
@@ -17,7 +19,7 @@ The source documents define a cloud-connected architecture using:
 
 - **Flutter / Dart** for the mobile client.
 - **Node.js + Express.js** for the REST API.
-- **MongoDB Atlas + Mongoose** for persistence.
+- **MongoDB Community Edition v6.0+ + Mongoose** for persistence.
 - **JWT** for stateless API authentication.
 - **bcrypt / bcryptjs** for password hashing.
 - **Firebase Cloud Messaging (FCM)** for push notifications.
@@ -110,6 +112,16 @@ Background processes that:
 - Detect overdue tasks.
 - Trigger AI analysis.
 - Compile analytics.
+
+### Operating Environment
+
+The latest SRS defines the supported runtime baseline as:
+
+- **Android 11.0+** for Android clients.
+- **iOS 13.0+** for iOS clients.
+- **Flutter** as the cross-platform mobile runtime.
+- **Node.js v18+ with Express.js** for the server runtime.
+- **MongoDB Community Edition v6.0+ with Mongoose ODM** for the database layer.
 
 ---
 
@@ -247,71 +259,51 @@ Conceptually:
 
 ## 7. Screen Blueprint
 
-There is a difference between the SDD and SRS screen lists.
+The latest SDD and SRS are now aligned on the same **12 core screens**. This list should be treated as the canonical UI blueprint for implementation.
 
-### SDD Screen Set
+1. **Splash Screen** — Application bootup, local token verification, and initial route initialization.
+2. **Login Screen** — User credential authentication form and JWT retrieval.
+3. **Register Screen** — Account creation and user registration form.
+4. **Dashboard Screen** — Greeting, top AI insight card, today's task list summary, quick stats, floating quick-add button, and main bottom navigation.
+5. **Task List / Search & Filter Screen** — Comprehensive task feed with title search, category filter chips, priority badges, and task filtering controls.
+6. **Create / Edit Task Screen** — One reusable dynamic task form: blank for creation and pre-populated for editing, including title, description, category, priority, date/time, and reminder offsets.
+7. **Task Details Screen** — Complete task metadata, reminder schedule, completion-state actions, and AI analysis entry point.
+8. **Calendar Screen** — Interactive monthly calendar mapped to daily task cards according to due dates.
+9. **AI Consequence Analysis Screen** — Overdue/high-priority task risk level, impact notes, and actionable recovery recommendations.
+10. **Analytics Screen** — Completion-rate gauges, task-distribution metrics, streak counters, and weekly/monthly charts.
+11. **Notification List Screen** — Historical push notifications, reminder alerts, triggers, and notification logs.
+12. **Profile & Settings Screen** — Account details, avatar customization, notification toggles, theme preferences, security options, and logout.
 
-The SDD lists:
-
-1. Splash
-2. Login
-3. Register
-4. Home Dashboard
-5. Task List
-6. Create Task
-7. Edit Task
-8. Calendar
-9. AI Insight
-10. Analytics
-11. Profile
-12. Settings
-
-### SRS Screen Set
-
-The SRS lists:
-
-1. Splash
-2. Login
-3. Register
-4. Dashboard
-5. Create / Edit Task
-6. Task Details
-7. Calendar
-8. Analytics
-9. AI Consequence Analysis
-10. Notification List
-11. Profile Settings
-12. Search & Filter
-
-### Proposed Implementation Resolution
-
-For implementation, use the **SRS list as the formal requirement baseline**, while preserving useful SDD concepts as routes, modes, or child views.
-
-Recommended route model:
+### Recommended Route Model
 
 ```text
 /splash
+
 /auth/login
 /auth/register
 
 /home
+
 /tasks
 /tasks/create
 /tasks/:id
 /tasks/:id/edit
-/tasks/search
 
 /calendar
 /analytics
 /insights/:taskId
 /notifications
-/profile
-/settings
+/profile-settings
 ```
 
-This keeps the required experience without forcing every logical mode to become a completely separate visual page.
+Search and filtering belong inside `/tasks`; they should not be implemented as a separate standalone screen.
+
+Create and edit should reuse the same `TaskFormScreen` and `TaskForm` widget with different initialization modes.
+
+Profile and settings should appear as one user-facing screen while remaining internally composed from smaller reusable settings widgets.
 
 ---
+
 
 # 8. Target System Architecture
 
@@ -380,7 +372,7 @@ flowchart TB
     end
 
     subgraph Data["Data & External Services"]
-        MONGO["MongoDB Atlas"]
+        MONGO["MongoDB Community Edition v6.0+"]
         FCM["Firebase Cloud Messaging"]
         AI["External AI REST API"]
         CACHE2["Redis / Queue Store - Proposed"]
@@ -1073,7 +1065,7 @@ Flutter Apps ──────>│ Load Balancer   │
                │            │            │
                └────────────┼────────────┘
                             ▼
-                      MongoDB Atlas
+              MongoDB Community Edition Cluster
 ```
 
 More API instances can be added as traffic increases.
@@ -1114,17 +1106,20 @@ A Redis-backed queue such as BullMQ is a possible implementation, but the source
 
 ## 13.3 Database Scaling
 
-Start with MongoDB Atlas using proper indexes.
+The latest SRS specifies **MongoDB Community Edition v6.0+ with Mongoose ODM**.
 
-Scale progressively:
+For the SaaS deployment, keep the database technology compliant with that requirement and scale it progressively:
 
-1. Correct compound indexes.
-2. Query optimization.
-3. Replica-set capacity increase.
-4. Read scaling where appropriate.
-5. Sharding only if real data volume requires it.
+1. Add correct compound indexes around real query patterns.
+2. Optimize projections, filters, and pagination.
+3. Run the production database as a replica set for resilience.
+4. Increase database compute/storage capacity as usage grows.
+5. Add read scaling only where measurements justify it.
+6. Consider sharding only when real production data volume and throughput require it.
 
-Do not introduce sharding during MVP unless actual usage requires it.
+**Proposed deployment note:** the source specifies MongoDB Community Edition, not MongoDB Atlas. The production architecture therefore treats cloud hosting, replica topology, backups, monitoring, and automation as deployment concerns rather than changing the required database product.
+
+Do not introduce sharding during the MVP unless actual measured load requires it.
 
 ---
 
@@ -1142,34 +1137,53 @@ This is more efficient than scaling the entire system as one process.
 
 # 14. Offline Resilience
 
-The SRS requires existing tasks to remain viewable during network drops and changes to synchronize after reconnection.
+The latest SRS requires existing task data to remain viewable during network interruptions and changes to synchronize after connectivity returns. It also explicitly states that **AI Insight features require an active internet connection**.
 
 Recommended mobile data flow:
 
 ```mermaid
 flowchart LR
     UI["Flutter UI"]
-    REPO["Task Repository"]
-    LOCAL["Local Cache"]
+    REPO["Repository Layer"]
+    LOCAL["Local Task Cache"]
     API["REST API"]
+    AI["AI Insight Service"]
 
     UI --> REPO
     REPO --> LOCAL
     REPO --> API
     API --> REPO
     REPO --> LOCAL
+    API --> AI
 ```
+
+### Offline-Capable Behavior
+
+- View cached tasks.
+- View task details from cached data.
+- Render calendar entries from cached tasks.
+- Preserve local UI/preferences where applicable.
+- Queue or retain supported task mutations for synchronization after reconnection.
+
+### Online-Dependent Behavior
+
+- Generate or refresh AI consequence analysis.
+- Retrieve new AI Insight results from the backend.
+- Synchronize local task changes with the server.
+- Perform operations that require current remote data.
 
 Principles:
 
-- UI reads through a repository, not directly from HTTP.
-- Repository can return cached task data.
+- UI reads through repositories, never directly from HTTP.
+- Repositories decide whether data comes from local or remote sources.
 - Network refresh updates the local cache.
-- Offline mutations can be queued for later synchronization.
+- Synchronization state should be represented explicitly in the data layer.
+- AI screens must provide a clear offline/unavailable state rather than pretending AI analysis is locally available.
 
-The exact conflict-resolution rule is not defined in the provided SRS/SDD and should be finalized before production synchronization logic is implemented.
+The exact synchronization conflict-resolution policy is not specified in the SRS/SDD and should be finalized before production offline-write synchronization is implemented.
 
 ---
+
 
 # 15. Security Architecture
 
@@ -1498,14 +1512,16 @@ urus-worker-ai
 urus-worker-analytics
 ```
 
-External managed services:
+Core production dependencies:
 
 ```text
-MongoDB Atlas
+MongoDB Community Edition v6.0+ cluster
 Firebase Cloud Messaging
 External AI API
 Optional Redis / managed queue
 ```
+
+**Proposed:** host the MongoDB Community Edition production cluster on cloud infrastructure with appropriate replication, backups, monitoring, and restricted network access.
 
 Typical production flow:
 
@@ -1515,7 +1531,7 @@ flowchart TB
     LB["HTTPS Load Balancer"]
     API["Node.js API Replicas"]
     WORKERS["Background Worker Replicas"]
-    DB["MongoDB Atlas"]
+    DB["MongoDB Community Edition v6.0+"]
     REDIS["Queue / Redis - Proposed"]
     FCM["Firebase FCM"]
     AI["AI Provider"]
@@ -1675,8 +1691,9 @@ External systems should be reached through integration adapters rather than dire
 | Concern | Decision |
 |---|---|
 | Mobile | Flutter / Dart |
+| Client support | Android 11.0+ and iOS 13.0+ |
 | API | Node.js + Express |
-| Database | MongoDB Atlas + Mongoose |
+| Database | MongoDB Community Edition v6.0+ + Mongoose ODM |
 | API style | REST JSON over HTTPS |
 | Authentication | JWT |
 | Password security | bcrypt/bcryptjs, salt >= 10 |
@@ -1688,7 +1705,7 @@ External systems should be reached through integration adapters rather than dire
 | Scalability | Stateless API replicas + independently scalable workers |
 | Background work | Queue/worker architecture — proposed |
 | Mobile architecture | Feature-first + presentation/application/domain/data layers |
-| Offline requirement | Local cache + repository synchronization |
+| Offline requirement | Local task cache + synchronization; AI Insight remains online-only |
 | UI reuse | Central design system + feature widgets |
 | Branding | Poppins, #84CC16 and required status colors |
 | Performance | Core APIs < 1.5 s under standard conditions |
@@ -1707,7 +1724,8 @@ External systems should be reached through integration adapters rather than dire
 7. Core API operations must target the SRS response-time requirement.
 8. Existing tasks must remain viewable when the mobile device temporarily loses network connectivity.
 9. Slow/background operations should not reduce API responsiveness.
-10. The MVP should not implement enterprise team collaboration or organization-level tenancy unless the product scope is formally changed.
+10. AI Insight generation must be treated as online-only and must expose a proper unavailable/offline state when there is no connection.
+11. The MVP should not implement enterprise team collaboration or organization-level tenancy unless the product scope is formally changed.
 
 ---
 
@@ -1715,7 +1733,7 @@ External systems should be reached through integration adapters rather than dire
 
 For URUS 2026, the most appropriate architecture is:
 
-> **A layered Flutter mobile client + a modular, stateless Node.js/Express backend + MongoDB Atlas + asynchronous workers for reminders/AI/analytics + FCM + an external AI provider.**
+> **A layered Flutter mobile client + a modular, stateless Node.js/Express backend + MongoDB Community Edition v6.0+ with Mongoose + asynchronous workers for reminders/AI/analytics + FCM + an external AI provider.**
 
 This architecture remains aligned with the SRS/SDD technology choices while making the project easier to maintain and scale.
 
@@ -1736,7 +1754,9 @@ This summary was prepared from the provided:
   - Security requirements.
   - Performance/reliability requirements.
   - UI/UX design tokens.
-  - 12-screen target blueprint.
+  - Canonical aligned 12-screen target blueprint.
+  - Android 11.0+ / iOS 13.0+ operating baseline.
+  - Offline task caching with AI Insight explicitly requiring internet access.
 
 - **Software Design Document (SDD) — URUS 2026**
   - Three-tier system architecture.
@@ -1763,6 +1783,7 @@ The following are architecture recommendations added to meet the requested scala
 - Feature-first Flutter directory organization.
 - Explicit Flutter clean-architecture layers.
 - Consistent `/api/v1` endpoint prefix.
+- Cloud deployment pattern for MongoDB Community Edition while keeping the database product compliant with the latest SRS.
 - Future-ready tenancy boundary without implementing team tenancy in MVP.
 
 These additions should be treated as implementation architecture decisions rather than original SRS/SDD requirements.
