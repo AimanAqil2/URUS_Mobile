@@ -42,67 +42,82 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 360;
+            final horizontalPadding = isCompact ? AppSpacing.md : AppSpacing.lg;
+            final logoSize = isCompact ? 70.0 : 78.0;
             final content = Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, AppSpacing.md),
-              child: Column(
-                children: [
-                  Image.asset(
-                    'assets/images/urus_icon.png',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.contain,
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                AppSpacing.lg,
+                horizontalPadding,
+                AppSpacing.md,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/urus_icon.png',
+                        width: logoSize,
+                        height: logoSize,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Welcome Back',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontSize: 29,
+                              fontWeight: FontWeight.w700,
+                              height: 1.1,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Sign in to continue managing your day.',
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _LoginForm(
+                          formKey: _formKey,
+                          emailController: _emailController,
+                          passwordController: _passwordController,
+                          isPasswordObscured: _isPasswordObscured,
+                          autovalidateMode: _hasSubmitted
+                              ? AutovalidateMode.onUserInteraction
+                              : AutovalidateMode.disabled,
+                          onTogglePassword: () => setState(() {
+                            _isPasswordObscured = !_isPasswordObscured;
+                          }),
+                          onSignIn: _validateLoginForm,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(
+                        width: double.infinity,
+                        child: _SocialDivider(),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      const _GoogleSignInButton(),
+                      const SizedBox(height: AppSpacing.lg),
+                      _CreateAccountPrompt(
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pushNamed(RouteNames.register),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Welcome Back',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontSize: 29,
-                      fontWeight: FontWeight.w700,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Sign in to continue managing your day.',
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  SizedBox(
-                    width: double.infinity,
-                    child: _LoginForm(
-                      formKey: _formKey,
-                      emailController: _emailController,
-                      passwordController: _passwordController,
-                      isPasswordObscured: _isPasswordObscured,
-                      autovalidateMode: _hasSubmitted
-                          ? AutovalidateMode.onUserInteraction
-                          : AutovalidateMode.disabled,
-                      onTogglePassword: () => setState(() {
-                        _isPasswordObscured = !_isPasswordObscured;
-                      }),
-                      onSignIn: _validateLoginForm,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const SizedBox(
-                    width: double.infinity,
-                    child: _SocialDivider(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const _GoogleSignInButton(),
-                  const SizedBox(height: AppSpacing.lg),
-                  _CreateAccountPrompt(
-                    onTap: () =>
-                        Navigator.of(context).pushNamed(RouteNames.register),
-                  ),
-                ],
+                ),
               ),
             );
 
@@ -111,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
             // the form to scroll instead of clipping controls below the fold.
             final isKeyboardVisible =
                 MediaQuery.viewInsetsOf(context).bottom > 0;
-            final isVerticallyConstrained = constraints.maxHeight < 650;
+            final isVerticallyConstrained = constraints.maxHeight < 720;
 
             // The scroll view stays mounted while the keyboard opens. Swapping
             // between separate layout trees here would dispose a focused field
@@ -166,14 +181,17 @@ class _LoginForm extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Email Address', style: labelStyle),
+            _LoginFieldLabel(
+              icon: Icons.mail_outline_rounded,
+              label: 'Email Address',
+              style: labelStyle,
+            ),
             const SizedBox(height: AppSpacing.sm),
             AppTextField(
               controller: emailController,
               height: 52,
               hintText: 'name@company.com',
               keyboardType: TextInputType.emailAddress,
-              prefixIcon: const Icon(Icons.mail_outline_rounded, size: 22),
               autovalidateMode: autovalidateMode,
               validator: _validateEmail,
             ),
@@ -181,10 +199,9 @@ class _LoginForm extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    'Password',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: _LoginFieldLabel(
+                    icon: Icons.lock_outline_rounded,
+                    label: 'Password',
                     style: labelStyle,
                   ),
                 ),
@@ -224,7 +241,6 @@ class _LoginForm extends StatelessWidget {
               height: 52,
               hintText: '••••••••••',
               obscureText: isPasswordObscured,
-              prefixIcon: const Icon(Icons.lock_outline_rounded, size: 22),
               suffixIcon: IconButton(
                 onPressed: onTogglePassword,
                 icon: Icon(
@@ -265,6 +281,36 @@ class _LoginForm extends StatelessWidget {
       return 'Password must be at least 8 characters.';
     }
     return null;
+  }
+}
+
+class _LoginFieldLabel extends StatelessWidget {
+  const _LoginFieldLabel({
+    required this.icon,
+    required this.label,
+    required this.style,
+  });
+
+  final IconData icon;
+  final String label;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 21, color: AppColors.textSecondary),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+        ),
+      ],
+    );
   }
 }
 

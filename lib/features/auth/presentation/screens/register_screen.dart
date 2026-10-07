@@ -78,16 +78,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isCompact = constraints.maxWidth < 360;
-            final horizontalPadding = isCompact ? AppSpacing.md : 28.0;
-            final formPadding = isCompact ? AppSpacing.lg - 4 : AppSpacing.lg;
+            final horizontalPadding = isCompact ? AppSpacing.md : AppSpacing.lg;
+            final formPadding = isCompact ? 20.0 : 22.0;
             final heroSize = isCompact ? 70.0 : 78.0;
-            final titleSize = isCompact ? 28.0 : 31.0;
+            final titleSize = isCompact ? 28.0 : 29.0;
 
             return SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
-                14,
+                AppSpacing.lg,
                 horizontalPadding,
                 AppSpacing.xl,
               ),
@@ -96,26 +96,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   constraints: const BoxConstraints(maxWidth: 520),
                   child: Column(
                     children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                          style: IconButton.styleFrom(
-                            backgroundColor: AppColors.surfaceMuted,
-                            foregroundColor: AppColors.textPrimary,
-                            minimumSize: const Size(56, 56),
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: IconButton(
+                              onPressed: () => Navigator.of(context).maybePop(),
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.surfaceMuted,
+                                foregroundColor: AppColors.textPrimary,
+                                minimumSize: const Size(56, 56),
+                              ),
+                            ),
                           ),
-                        ),
+                          Image.asset(
+                            'assets/images/urus_icon.png',
+                            width: heroSize,
+                            height: heroSize,
+                            fit: BoxFit.contain,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Image.asset(
-                        'assets/images/urus_icon.png',
-                        width: heroSize,
-                        height: heroSize,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: 20),
                       Text(
                         'Create Account',
                         textAlign: TextAlign.center,
@@ -132,10 +138,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: 28),
                       AppCard(
                         padding: EdgeInsets.all(formPadding),
                         child: Form(
@@ -152,10 +158,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _nameController,
                                 height: 52,
                                 hintText: 'e.g. Faris Al-Hadi',
-                                prefixIcon: const Icon(
-                                  Icons.person_outline_rounded,
-                                  size: 21,
-                                ),
                                 autovalidateMode: autovalidateMode,
                                 validator: _validateName,
                               ),
@@ -170,10 +172,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 height: 52,
                                 hintText: 'name@company.com',
                                 keyboardType: TextInputType.emailAddress,
-                                prefixIcon: const Icon(
-                                  Icons.mail_outline_rounded,
-                                  size: 21,
-                                ),
                                 autovalidateMode: autovalidateMode,
                                 validator: _validateEmail,
                               ),
@@ -189,10 +187,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 height: 52,
                                 hintText: 'At least 8 characters',
                                 obscureText: _isPasswordObscured,
-                                prefixIcon: const Icon(
-                                  Icons.lock_outline_rounded,
-                                  size: 21,
-                                ),
                                 suffixIcon: IconButton(
                                   tooltip: _isPasswordObscured
                                       ? 'Show password'
@@ -222,10 +216,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 height: 52,
                                 hintText: 'Confirm your password',
                                 obscureText: _isConfirmPasswordObscured,
-                                prefixIcon: const Icon(
-                                  Icons.lock_reset_outlined,
-                                  size: 21,
-                                ),
                                 suffixIcon: IconButton(
                                   tooltip: _isConfirmPasswordObscured
                                       ? 'Show password'
